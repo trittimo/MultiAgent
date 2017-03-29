@@ -76,9 +76,6 @@ class ReflexAgent(Agent):
     newGhostStates = successorGameState.getGhostStates()
     newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
-    # General strategy
-    # Never move into a square which could be occupied by a ghost
-    # Failing that, always prioritize the square closest to food
 
     from game import Actions
     from math import floor
@@ -87,6 +84,7 @@ class ReflexAgent(Agent):
     enemiesPosition = [enemies] + [Actions.getLegalNeighbors(pos, walls) for pos in enemies]
     enemiesPosition = [item for sublist in enemiesPosition for item in sublist]
     enemiesPosition = [(int(p[0]), int(p[1])) for p in enemiesPosition]
+
     # If the new position is in a square that could possibly be occupied by an enemy
     # Don't go there
     if newPos in enemiesPosition:
@@ -98,11 +96,11 @@ class ReflexAgent(Agent):
 
     # Apply a penalty for staying in the same spot
     if newPos == currentGameState.getPacmanPosition():
-      return -500
+      return -500 * self.explored.count(newPos)
 
     # If the new square has already been visited, penalize it
     if newPos in self.explored:
-      return -250
+      return -250 * self.explored.count(newPos)
 
 
     foodPos = []
@@ -113,10 +111,8 @@ class ReflexAgent(Agent):
     
     # Otherwise, return the euclidian distance to the nearest food
     dist = [float(manhattanDistance(newPos, foodPos)) for foodPos in newFood]
-    # import operator
-    # print min(dist), Actions.vectorToDirection(map(operator.sub, newPos, currentGameState.getPacmanPosition()))
+
     return -1*min(dist)
-    # return successorGameState.getScore()
 
 def scoreEvaluationFunction(currentGameState):
   """
@@ -148,6 +144,27 @@ class MultiAgentSearchAgent(Agent):
     self.evaluationFunction = util.lookup(evalFn, globals())
     self.depth = int(depth)
 
+def minimax(gameState, evalFn, depth = 0):
+  pacPos = gameState.getPacmanPosition()
+  enemiesPos = [ghost.getPosition() for ghost in gameState.getGhostStates()]
+  if gameState.getFood() == 0: # Win for pacman
+    return (Directions.STOP, 9999999)
+  elif pacPos in enemiesPos: # Win for the ghosts
+    return (Directions.STOP, -1)
+  elif depth == 4:
+    return (Directions.STOP, evalFn(gameState))
+
+  bestMove = Directions.STOP
+  bestScore = -2
+  for move in gameState.getLegalActions(0):
+    nextState = gameState.generateSuccessor(0, move)
+    resultMove, resultScore = minimax(nextState, evalFn, depth + 1)
+    if result > bestScore:
+      bestScore = result
+      bestMove = move
+  return (bestMove, bestScore)
+
+
 class MinimaxAgent(MultiAgentSearchAgent):
   """
     Your minimax agent (question 2)
@@ -173,8 +190,13 @@ class MinimaxAgent(MultiAgentSearchAgent):
       gameState.getNumAgents():
         Returns the total number of agents in the game
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    move, score = minimax(gameState, self.evaluationFunction)
+    return move
+
+
+
+
+
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
   """
