@@ -24,6 +24,9 @@ class ReflexAgent(Agent):
 
 
   def getAction(self, gameState):
+
+    if not hasattr(self, 'explored'):
+      self.explored = []
     """
     You do not need to change this method, but you're welcome to.
 
@@ -42,7 +45,12 @@ class ReflexAgent(Agent):
     bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
     chosenIndex = random.choice(bestIndices) # Pick randomly among the best
 
-    "Add more of your code here if you want to"
+    from game import Actions
+    newMove = Actions.directionToVector(legalMoves[chosenIndex])
+    import operator
+    newMove = map(operator.add, newMove, gameState.getPacmanPosition())
+    newMove = [int(i) for i in newMove]
+    self.explored.append(tuple(newMove))
 
     return legalMoves[chosenIndex]
 
@@ -84,13 +92,18 @@ class ReflexAgent(Agent):
     if newPos in enemiesPosition:
       return -1000
 
+    # Automatically go to the next square if it has food in it
+    if currentGameState.getFood()[newPos[0]][newPos[1]]:
+      return 1000
+
     # Apply a penalty for staying in the same spot
     if newPos == currentGameState.getPacmanPosition():
-      return -1
+      return -500
 
-    # Automatically go to the next square if it has food in it
-    if newFood[newPos[0]][newPos[1]]:
-      return 1000
+    # If the new square has already been visited, penalize it
+    if newPos in self.explored:
+      return -250
+
 
     foodPos = []
     for x in range(newFood.width):
@@ -102,7 +115,7 @@ class ReflexAgent(Agent):
     dist = [float(manhattanDistance(newPos, foodPos)) for foodPos in newFood]
     # import operator
     # print min(dist), Actions.vectorToDirection(map(operator.sub, newPos, currentGameState.getPacmanPosition()))
-    return manhattanDistance((0,0), (newFood.width, newFood.height)) - min(dist)
+    return -1*min(dist)
     # return successorGameState.getScore()
 
 def scoreEvaluationFunction(currentGameState):
