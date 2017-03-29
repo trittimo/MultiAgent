@@ -37,6 +37,7 @@ class ReflexAgent(Agent):
 
     # Choose one of the best actions
     scores = [self.evaluationFunction(gameState, action) for action in legalMoves]
+    print scores
     bestScore = max(scores)
     bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
     chosenIndex = random.choice(bestIndices) # Pick randomly among the best
@@ -67,8 +68,42 @@ class ReflexAgent(Agent):
     newGhostStates = successorGameState.getGhostStates()
     newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
-    "*** YOUR CODE HERE ***"
-    return successorGameState.getScore()
+    # General strategy
+    # Never move into a square which could be occupied by a ghost
+    # Failing that, always prioritize the square closest to food
+
+    from game import Actions
+    from math import floor
+    walls = successorGameState.getWalls()
+    enemies = [ghost.getPosition() for ghost in newGhostStates]
+    enemiesPosition = [enemies] + [Actions.getLegalNeighbors(pos, walls) for pos in enemies]
+    enemiesPosition = [item for sublist in enemiesPosition for item in sublist]
+    enemiesPosition = [(int(p[0]), int(p[1])) for p in enemiesPosition]
+    # If the new position is in a square that could possibly be occupied by an enemy
+    # Don't go there
+    if newPos in enemiesPosition:
+      return -1000
+
+    # Apply a penalty for staying in the same spot
+    if newPos == currentGameState.getPacmanPosition():
+      return -1
+
+    # Automatically go to the next square if it has food in it
+    if newFood[newPos[0]][newPos[1]]:
+      return 1000
+
+    foodPos = []
+    for x in range(newFood.width):
+     for y in range(newFood.height):
+       if newFood[x][y]:
+         foodPos.append((x, y))
+    
+    # Otherwise, return the euclidian distance to the nearest food
+    dist = [float(manhattanDistance(newPos, foodPos)) for foodPos in newFood]
+    # import operator
+    # print min(dist), Actions.vectorToDirection(map(operator.sub, newPos, currentGameState.getPacmanPosition()))
+    return manhattanDistance((0,0), (newFood.width, newFood.height)) - min(dist)
+    # return successorGameState.getScore()
 
 def scoreEvaluationFunction(currentGameState):
   """

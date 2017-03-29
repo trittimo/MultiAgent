@@ -1,3 +1,4 @@
+#!python2
 # pacman.py
 # ---------
 # Licensing Information: Please do not distribute or publish solutions to this
