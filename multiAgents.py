@@ -40,7 +40,6 @@ class ReflexAgent(Agent):
 
     # Choose one of the best actions
     scores = [self.evaluationFunction(gameState, action) for action in legalMoves]
-    print scores
     bestScore = max(scores)
     bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
     chosenIndex = random.choice(bestIndices) # Pick randomly among the best
@@ -144,59 +143,60 @@ class MultiAgentSearchAgent(Agent):
     self.evaluationFunction = util.lookup(evalFn, globals())
     self.depth = int(depth)
 
-def minimax(gameState, evalFn, depth = 0):
-  pacPos = gameState.getPacmanPosition()
-  enemiesPos = [ghost.getPosition() for ghost in gameState.getGhostStates()]
-  if gameState.getFood() == 0: # Win for pacman
-    return (Directions.STOP, 9999999)
-  elif pacPos in enemiesPos: # Win for the ghosts
-    return (Directions.STOP, -1)
-  elif depth == 4:
-    return (Directions.STOP, evalFn(gameState))
+class Minimax:
+  def __init__(self, maxDepth, evalfn):
+    self.maxDepth = maxDepth
+    self.evalfn = evalfn
 
-  bestMove = Directions.STOP
-  bestScore = -2
-  for move in gameState.getLegalActions(0):
-    nextState = gameState.generateSuccessor(0, move)
-    resultMove, resultScore = minimax(nextState, evalFn, depth + 1)
-    if result > bestScore:
-      bestScore = result
-      bestMove = move
-  return (bestMove, bestScore)
+  def getBestAction(self, state, agent, depth):
+    if agent >= state.getNumAgents():
+      agent = 0
+      depth = depth + 1
 
+    if depth == self.maxDepth:
+      return self.evalfn(state)
+
+    if agent == 0:
+      return self.max(state, agent, depth)
+    else:
+      return self.min(state, agent, depth)
+
+  def common(self, state, agent, depth, fn, init):
+    action = (None, init)
+    if not state.getLegalActions(agent):
+      return self.evalfn(state)
+
+    for move in state.getLegalActions(agent):
+      if move == Directions.STOP:
+        continue
+
+      successor = state.generateSuccessor(agent, move)
+      possible = self.getBestAction(successor, agent + 1, depth)
+      if type(possible) is tuple:
+        possible = possible[1]
+
+      minVal = fn(action[1], possible)
+
+      if minVal is not action[1]:
+        action = (move, minVal)
+
+    return action
+
+  def min(self, state, agent, depth):
+    return self.common(state, agent, depth, min, float("inf"))
+    
+  def max(self, state, agent, depth):
+    return self.common(state, agent, depth, max, -float("inf"))
+    
 
 class MinimaxAgent(MultiAgentSearchAgent):
   """
-    Your minimax agent (question 2)
+  Your minimax agent (question 2)
   """
 
   def getAction(self, gameState):
-    """
-      Returns the minimax action from the current gameState using self.depth
-      and self.evaluationFunction.
-
-      Here are some method calls that might be useful when implementing minimax.
-
-      gameState.getLegalActions(agentIndex):
-        Returns a list of legal actions for an agent
-        agentIndex=0 means Pacman, ghosts are >= 1
-
-      Directions.STOP:
-        The stop direction, which is always legal
-
-      gameState.generateSuccessor(agentIndex, action):
-        Returns the successor game state after an agent takes an action
-
-      gameState.getNumAgents():
-        Returns the total number of agents in the game
-    """
-    move, score = minimax(gameState, self.evaluationFunction)
-    return move
-
-
-
-
-
+    minimax = Minimax(self.depth, self.evaluationFunction)
+    return minimax.getBestAction(gameState, 0, 0)[0]
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
   """
