@@ -238,13 +238,27 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
 
 def betterEvaluationFunction(currentGameState):
   """
-    Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
-    evaluation function (question 5).
-
-    DESCRIPTION: <write something here so we know what you did>
+    DESCRIPTION:
+    I just took into account where the nearest food is and where the enemies are
+    Just trying to maximize the distance to enemies and minimize the distance to
+    food. I also added on the current game score, because a better game score is
+    better.
   """
-  "*** YOUR CODE HERE ***"
-  util.raiseNotDefined()
+
+  pacPos = currentGameState.getPacmanPosition()
+  distFn = lambda pos : manhattanDistance(pacPos, pos)
+
+  food = [-distFn(pos) for pos in currentGameState.getFood().asList()]
+  enemies = [distFn(pos) for pos in currentGameState.getGhostPositions()]
+  enemies = [-1.0/dist if dist != 0 else 0 for dist in enemies]
+  
+  if not food:
+    food.append(0)
+
+  return max(food) + min(enemies) + currentGameState.getScore()
+
+
+
 
 # Abbreviation
 better = betterEvaluationFunction
