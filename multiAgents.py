@@ -137,7 +137,7 @@ class Minimax:
       depth = depth + 1
 
     if depth == self.maxDepth:
-      return self.evalfn(state)
+      return (None, self.evalfn(state))
 
     if agent == 0:
       return self.max(state, agent, depth)
@@ -147,7 +147,7 @@ class Minimax:
   def common(self, state, agent, depth, fn, init):
     action = (None, init)
     if not state.getLegalActions(agent):
-      return self.evalfn(state)
+      return (None, self.evalfn(state))
 
     for move in state.getLegalActions(agent):
       if move == Directions.STOP:
@@ -155,10 +155,8 @@ class Minimax:
 
       successor = state.generateSuccessor(agent, move)
       possible = self.getBestAction(successor, agent + 1, depth)
-      if type(possible) is tuple:
-        possible = possible[1]
 
-      minVal = fn(action[1], possible)
+      minVal = fn(action[1], possible[1])
 
       if minVal is not action[1]:
         action = (move, minVal)
