@@ -24,9 +24,6 @@ class ReflexAgent(Agent):
 
 
   def getAction(self, gameState):
-
-    if not hasattr(self, 'explored'):
-      self.explored = []
     """
     You do not need to change this method, but you're welcome to.
 
@@ -43,13 +40,6 @@ class ReflexAgent(Agent):
     bestScore = max(scores)
     bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
     chosenIndex = random.choice(bestIndices) # Pick randomly among the best
-
-    from game import Actions
-    newMove = Actions.directionToVector(legalMoves[chosenIndex])
-    import operator
-    newMove = map(operator.add, newMove, gameState.getPacmanPosition())
-    newMove = [int(i) for i in newMove]
-    self.explored.append(tuple(newMove))
 
     return legalMoves[chosenIndex]
 
@@ -75,6 +65,8 @@ class ReflexAgent(Agent):
     newGhostStates = successorGameState.getGhostStates()
     newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
+    # if power-pellet nearby, go there
+    # look at food-grid
 
     from game import Actions
     from math import floor
@@ -95,23 +87,14 @@ class ReflexAgent(Agent):
 
     # Apply a penalty for staying in the same spot
     if newPos == currentGameState.getPacmanPosition():
-      return -500 * self.explored.count(newPos)
-
-    # If the new square has already been visited, penalize it
-    if newPos in self.explored:
-      return -250 * self.explored.count(newPos)
-
+      return -500
 
     foodPos = []
     for x in range(newFood.width):
      for y in range(newFood.height):
        if newFood[x][y]:
          foodPos.append((x, y))
-    
-    # Otherwise, return the euclidian distance to the nearest food
-    dist = [float(manhattanDistance(newPos, foodPos)) for foodPos in newFood]
-
-    return -1*min(dist)
+    return sum([float(1/2) ** float(manhattanDistance(newPos, foodPos)) for foodPos in newFood])
 
 def scoreEvaluationFunction(currentGameState):
   """
@@ -187,22 +170,13 @@ class Minimax:
     
   def max(self, state, agent, depth):
     return self.common(state, agent, depth, max, -float("inf"))
-    
 
 class MinimaxAgent(MultiAgentSearchAgent):
-  """
-  Your minimax agent (question 2)
-  """
-
   def getAction(self, gameState):
     minimax = Minimax(self.depth, self.evaluationFunction)
     return minimax.getBestAction(gameState, 0, 0)[0]
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
-  """
-    Your minimax agent with alpha-beta pruning (question 3)
-  """
-
   def getAction(self, gameState):
     """
       Returns the minimax action using self.depth and self.evaluationFunction
