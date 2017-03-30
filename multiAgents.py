@@ -174,12 +174,12 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
     alphabeta = AlphaBeta(self.depth, self.evaluationFunction)
     return alphabeta.getBestAction(gameState, 0, 0, -float("inf"), float("inf"))[0]
 
-class ExpectimaxAgent:
+class Expectimax:
   def __init__(self, maxDepth, evalfn):
     self.maxDepth = maxDepth
     self.evalfn = evalfn
 
-  def getBestAction(self, state, agent, depth, alpha, beta):
+  def getBestAction(self, state, agent, depth):
     if agent >= state.getNumAgents():
       agent = 0
       depth = depth + 1
@@ -188,54 +188,53 @@ class ExpectimaxAgent:
       return (None, self.evalfn(state))
 
     if agent == 0:
-      return self.max(state, agent, depth, alpha, beta)
+      return self.max(state, agent, depth)
     else:
-      return self.min(state, agent, depth, alpha, beta)
+      return self.exp(state, agent, depth)
 
-  def common(self, state, agent, depth, fns, init, alpha, beta):
-    action = (None, init)
+  def max(self, state, agent, depth):
+    action = (None, -float("inf"))
+    if not state.getLegalActions(agent):
+      return (None, self.evalfn(state))
+
+    for move in state.getLegalActions(agent):
+      if move == Directions.STOP:
+        continue
+
+      successor = state.generateSuccessor(agent, move)
+      possible = self.getBestAction(successor, agent + 1, depth)
+
+      maxVal = max(action[1], possible[1])
+
+      if maxVal is not action[1]:
+        action = (move, maxVal)
+
+    return action
+
+  def exp(self, state, agent, depth):
+    action = [None, 0]
     if not state.getLegalActions(agent):
       return (None, self.evalfn(state))
 
     legal = state.getLegalActions(agent)
+    prob = 1.0/len(legal)
     for move in legal:
       if move == Directions.STOP:
         continue
 
       successor = state.generateSuccessor(agent, move)
-      possible = self.getBestAction(successor, agent + 1, depth, alpha, beta)
-      possible[1] = 1/float(len(legal)) * possible[1]
+      possible = self.getBestAction(successor, agent + 1, depth)
 
-      comp, maxminfn = fns
+      expVal = prob * possible[1]
+      action[1] = action[1] + expVal
+      action[0] = move
 
-      correct = maxminfn(action[1], possible[1])
-
-      if correct is not action[1]:
-        action = (move, correct)
-
-      if maxminfn == max:
-        if comp(action[1], beta):
-          return action
-        alpha = maxminfn(alpha, action[1])
-      else:
-        if comp(action[1], alpha):
-          return action
-        beta = maxminfn(beta, action[1])
-
-    return action
-
-  def min(self, state, agent, depth, alpha, beta):
-    import operator
-    return self.common(state, agent, depth, (operator.le, min), float("inf"), alpha, beta)
-    
-  def max(self, state, agent, depth, alpha, beta):
-    import operator
-    return self.common(state, agent, depth, (operator.ge, max), -float("inf"), alpha, beta)
+    return tuple(action)
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
   def getAction(self, gameState):
-    expectimax = AlphaBeta(self.depth, self.evaluationFunction)
-    return expectimax.getBestAction(gameState, 0, 0, -float("inf"), float("inf"))[0]
+    expectimax = Expectimax(self.depth, self.evaluationFunction)
+    return expectimax.getBestAction(gameState, 0, 0)[0]
 
 def betterEvaluationFunction(currentGameState):
   """
